@@ -16,7 +16,7 @@ contract SaveMyName{
     }
 
     // function contains add() and retrieve()
-    function saveMyName(string memory _name, string memory _bio, uint256 age) public returns(string memory, string memory, uint256) {
+    function saveMyName(string memory _name, string memory _bio, uint256 _age) public returns(string memory, string memory, uint256) {
         name = _name;
         bio = _bio;
         age = _age;
@@ -36,3 +36,4 @@ contract SaveMyName{
         name = _newName;
     }
 }
+
