@@ -44,13 +44,13 @@ contract VaultManager{
     function storeSecret(address boxAddress, string calldata secret) external {
         IDepositBox box = IDepositBox(boxAddress);
         require(box.getOwner() == msg.sender, "Only the owner can store a secret");
-        box.storeSecret(secret);
+        box.storeSecret(secret, msg.sender);
     }
 
     function transferBoxOwnership(address boxAddress, address newOwner) external {
         IDepositBox box = IDepositBox(boxAddress);
         require(box.getOwner() == msg.sender, "Only the owner can transfer ownership");
-        box.transferOwnership(newOwner);
+        box.transferOwnership(newOwner, msg.sender);
         address[] storage boxes = userDepositBoxes[msg.sender];
         for(uint256 i = 0; i < boxes.length; i++) {
             if (boxes[i] == boxAddress) {

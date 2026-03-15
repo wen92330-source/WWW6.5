@@ -14,12 +14,12 @@ contract PremiumDepositBox is BaseDepositBox {
         return "Premium";
     }
 
-    function setMetadata(string calldata _metadata) external onlyOwner {
+    function setMetadata(string calldata _metadata, address caller) external onlyOwner(caller) {
         metadata = _metadata;
         emit MetadataUpdated(msg.sender);
     }
 
-    function getMetadata() external view onlyOwner returns (string memory) {
+    function getMetadata(address caller) external view onlyOwner(caller) returns (string memory) {
         return metadata;
     }
 }
