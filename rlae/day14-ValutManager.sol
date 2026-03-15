@@ -7,7 +7,7 @@ import "./day14-PremiumDepositBox.sol";
 import "./day14-TimeLockedDepositBox.sol";
 
 contract VaultManager {
-    constructor(address initialOwner) BaseDepositBox(initialOwner) {}
+    //constructor(address initialOwner) BaseDepositBox(initialOwner) {}
     mapping(address => address[]) private userDepositBoxes; //将用户的地址映射到其拥有的所有存款箱（作为合约地址）
     mapping(address => string) private boxNames;
 
