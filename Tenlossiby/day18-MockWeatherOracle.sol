@@ -1,76 +1,143 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
-// MockWeatherOracle - 模拟天气预言机合约
-// 这是一个用于测试的模拟预言机，模拟 Chainlink AggregatorV3Interface
-// 在实际生产环境中，应该使用真实的 Chainlink 预言机网络
-contract MockWeatherOracle {
+// 导入 Chainlink 的 AggregatorV3Interface 接口
+// 这是 Chainlink 价格预言机的标准接口
+import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+// 导入 OpenZeppelin 的 Ownable 合约，实现所有权管理
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+// MockWeatherOracle - 模拟天气预言机合约（升级版）
+// 实现了 Chainlink 的 AggregatorV3Interface 接口
+// 用于开发和测试环境，模拟真实的天气数据预言机
+// 生成伪随机的降雨量数据，模拟真实世界的天气变化
+contract MockWeatherOracle is AggregatorV3Interface, Ownable {
+    // 数据精度（小数位数）
+    // 降雨量使用整数表示，精度为 0（整毫米）
+    uint8 private _decimals;
+    // 预言机描述信息
+    string private _description;
     // 数据轮次 ID，每次更新时递增
     uint80 private _roundId;
-
-    // 降雨量数据（单位：毫米）
-    // 使用 int256 以兼容 Chainlink 接口（可能返回负数表示错误）
-    int256 private _rainfallData;
-
     // 数据更新时间戳
     uint256 private _timestamp;
+    // 上次更新时的区块号
+    uint256 private _lastUpdateBlock;
 
-    // 构造函数 - 初始化默认值
-    constructor() {
-        _roundId = 1;
-        _timestamp = block.timestamp;
-        _rainfallData = 100; // 默认降雨量 100mm
+    // 构造函数 - 初始化预言机参数
+    constructor() Ownable(msg.sender) {
+        _decimals = 0; // 降雨量以整毫米为单位，无小数
+        _description = "MOCK/RAINFALL/USD"; // 描述：模拟降雨量数据
+        _roundId = 1; // 初始轮次 ID
+        _timestamp = block.timestamp; // 当前区块时间戳
+        _lastUpdateBlock = block.number; // 当前区块号
     }
 
-    // 更新降雨量数据（仅用于测试）
-    // _rainfall: 新的降雨量值（毫米）
-    // 在实际 Chainlink 预言机中，此函数由预言机节点调用
-    function updateRainfall(int256 _rainfall) external {
-        _rainfallData = _rainfall;
-        _timestamp = block.timestamp;
-        _roundId++;
+    // 获取数据精度（小数位数）
+    // 返回: 0，表示降雨量使用整数毫米
+    function decimals() external view override returns (uint8) {
+        return _decimals;
     }
 
-    // 模拟 Chainlink 的 AggregatorV3Interface
-    // 获取最新的数据轮次信息
+    // 获取预言机描述信息
+    // 返回: "MOCK/RAINFALL/USD"
+    function description() external view override returns (string memory) {
+        return _description;
+    }
+
+    // 获取预言机版本号
+    // 返回: 1（当前版本）
+    function version() external pure override returns (uint256) {
+        return 1;
+    }
+
+    // 获取指定轮次的数据
+    // _roundId_: 要查询的轮次 ID
+    // 返回: (roundId, answer, startedAt, updatedAt, answeredInRound)
+    function getRoundData(uint80 _roundId_)
+        external
+        view
+        override
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        // 返回请求的轮次 ID 和当前计算的降雨量
+        return (_roundId_, _rainfall(), _timestamp, _timestamp, _roundId_);
+    }
+
+    // 获取最新轮次的数据（AggregatorV3Interface 标准函数）
+    // 这是使用最频繁的函数，获取最新的降雨量数据
     // 返回:
-    //   roundId: 数据轮次 ID
-    //   answer: 降雨量数据（毫米）
+    //   roundId: 当前数据轮次 ID
+    //   answer: 当前降雨量（毫米）
     //   startedAt: 轮次开始时间戳
     //   updatedAt: 数据更新时间戳
     //   answeredInRound: 回答所在的轮次
     function latestRoundData()
         external
         view
-        returns (
-            uint80 roundId,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        )
+        override
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        return (_roundId, _rainfallData, _timestamp, _timestamp, _roundId);
+        // 返回当前轮次 ID 和计算的降雨量
+        return (_roundId, _rainfall(), _timestamp, _timestamp, _roundId);
+    }
+
+    // 计算当前降雨量（内部函数）
+    // 使用区块信息生成伪随机数，模拟降雨量变化
+    // 返回: 0-999 之间的随机整数（毫米）
+    function _rainfall() public view returns (int256) {
+        // 计算距离上次更新的区块数
+        uint256 blocksSinceLastUpdate = block.number - _lastUpdateBlock;
+
+        // 使用区块信息生成伪随机数
+        // 使用 keccak256 哈希多个区块参数，增加随机性
+        uint256 randomFactor = uint256(keccak256(abi.encodePacked(
+            block.timestamp,      // 当前区块时间戳
+            block.coinbase,       // 矿工地址
+            blocksSinceLastUpdate // 距离上次更新的区块数
+        ))) % 1000; // 取模 1000，得到 0-999 之间的数
+
+        // 返回随机降雨量（0-999 毫米）
+        return int256(randomFactor);
+    }
+
+    // 更新降雨量数据（内部函数）
+    // 递增轮次 ID，更新时间戳和区块号
+    function _updateRandomRainfall() private {
+        _roundId++; // 递增轮次 ID
+        _timestamp = block.timestamp; // 更新为当前时间戳
+        _lastUpdateBlock = block.number; // 更新为当前区块号
+    }
+
+    // 强制更新降雨量（外部函数，任何人可调用）
+    // 调用此函数会触发数据更新，生成新的随机降雨量
+    function updateRandomRainfall() external {
+        _updateRandomRainfall();
     }
 }
 
-// Chainlink 预言机说明:
+// 合约设计要点说明:
 //
-// 1. 真实预言机 vs 模拟预言机:
-//    - 模拟预言机: 用于开发和测试，可手动设置数据
-//    - 真实预言机: 由去中心化网络提供数据，不可篡改
+// 1. Chainlink 兼容性:
+//    - 实现 AggregatorV3Interface 接口，与真实 Chainlink 预言机接口一致
+//    - 支持 latestRoundData() 和 getRoundData() 标准函数
+//    - 可被任何支持 Chainlink 的合约直接使用
 //
-// 2. AggregatorV3Interface 标准:
-//    - Chainlink 价格 feeds 的标准接口
-//    - 提供 roundId, answer, timestamp 等信息
-//    - 支持多个数据提供商的聚合
+// 2. 伪随机数生成:
+//    - 使用区块参数生成伪随机数
+//    - 注意: 这不是真正安全的随机数，仅用于测试
+//    - 生产环境应使用 Chainlink VRF 获取安全随机数
 //
-// 3. 使用场景:
-//    - 价格预言机（ETH/USD, BTC/USD 等）
-//    - 天气数据
-//    - 任何需要链下数据的场景
+// 3. 数据更新机制:
+//    - 每次调用 updateRandomRainfall() 会更新轮次
+//    - _rainfall() 函数根据区块信息实时计算
+//    - 即使不更新，每次查询也会得到不同结果
 //
-// 4. 安全注意事项:
-//    - 真实应用中要考虑预言机延迟和价格偏差
-//    - 可能需要使用多个预言机进行交叉验证
-//    - 考虑使用 Chainlink 的数据质量证明
+// 4. 使用场景:
+//    - 开发和测试环境模拟天气数据
+//    - 演示参数保险合约的工作原理
+//    - 本地测试无需连接真实 Chainlink 网络
+//
+// 5. 与真实预言机的区别:
+//    - 真实预言机: 由去中心化网络提供真实数据
+//    - 模拟预言机: 本地生成伪随机数据，仅用于测试
