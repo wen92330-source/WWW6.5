@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimpleERC20 教学 DApp</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <section class="hero card">
+      <div>
+        <p class="eyebrow">Day12 ERC20 Demo</p>
+        <h1>SimpleERC20 教学前端</h1>
+        <p class="hint">
+          这个页面专门演示 `transfer`、`approve`、`transferFrom` 的完整流程。读操作免费，写操作需要钱包签名和 gas。
+        </p>
+      </div>
+      <div id="status" class="status">状态：等待连接钱包</div>
+    </section>
+
+    <section class="card">
+      <h2>1. 钱包与合约</h2>
+      <p class="hint">先连接钱包，再输入已部署的 `SimpleERC20` 合约地址。</p>
+      <div class="row">
+        <button id="connectBtn">连接 MetaMask</button>
+        <button id="refreshWalletBtn">刷新钱包信息</button>
+        <span id="walletInfo" class="pill">未连接</span>
+      </div>
+      <div class="grid two">
+        <label>
+          <span>合约地址</span>
+          <input id="contractAddress" placeholder="输入 SimpleERC20 合约地址 (0x...)" />
+        </label>
+        <div class="action-inline">
+          <button id="initContractBtn">初始化合约</button>
+          <span id="contractInfo" class="pill">未初始化</span>
+        </div>
+      </div>
+      <p class="tiny">
+        建议通过本地静态服务器访问这个页面，例如 `http://localhost`，这样钱包注入会更稳定。
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>2. 代币信息</h2>
+      <p class="hint">这里会读取 `name`、`symbol`、`decimals` 和 `totalSupply`。</p>
+      <div class="grid four stats">
+        <div class="stat">
+          <span class="label">Name</span>
+          <strong id="tokenName">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Symbol</span>
+          <strong id="tokenSymbol">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Decimals</span>
+          <strong id="tokenDecimals">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Total Supply</span>
+          <strong id="tokenSupply">-</strong>
+        </div>
+      </div>
+      <div class="row">
+        <button id="refreshTokenBtn">刷新代币信息</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. 我的资产</h2>
+      <p class="hint">查询当前连接账户的余额，方便观察转账前后变化。</p>
+      <div class="grid two">
+        <div class="stat">
+          <span class="label">当前账户余额</span>
+          <strong id="myBalance">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">当前账户地址</span>
+          <strong id="currentAccount" class="mono small">-</strong>
+        </div>
+      </div>
+      <div class="row">
+        <button id="refreshBalanceBtn">刷新我的余额</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. 普通转账</h2>
+      <p class="hint">`transfer()` 是“我把自己的币转给别人”。</p>
+      <div class="grid two">
+        <label>
+          <span>接收地址 `_to`</span>
+          <input id="transferTo" placeholder="0x..." />
+        </label>
+        <label>
+          <span>转账数量 `_value`</span>
+          <input id="transferAmount" placeholder="例如 1.5" />
+        </label>
+      </div>
+      <div class="row">
+        <button id="transferBtn">发送 transfer()</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. 授权与代扣</h2>
+      <p class="hint">
+        `approve()` 是给权限，不是转账。`transferFrom()` 是使用授权代别人转账。
+      </p>
+
+      <div class="subcard">
+        <h3>5.1 授权 approve()</h3>
+        <div class="grid two">
+          <label>
+            <span>被授权地址 `_spender`</span>
+            <input id="approveSpender" placeholder="0x..." />
+          </label>
+          <label>
+            <span>授权数量 `_value`</span>
+            <input id="approveAmount" placeholder="例如 10" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="approveBtn">发送 approve()</button>
+        </div>
+      </div>
+
+      <div class="subcard">
+        <h3>5.2 查询 allowance(owner, spender)</h3>
+        <div class="grid two">
+          <label>
+            <span>owner 地址</span>
+            <input id="allowanceOwner" placeholder="0x..." />
+          </label>
+          <label>
+            <span>spender 地址</span>
+            <input id="allowanceSpender" placeholder="0x..." />
+          </label>
+        </div>
+        <div class="row">
+          <button id="checkAllowanceBtn">查询 allowance</button>
+          <span id="allowanceResult" class="pill wide">allowance: -</span>
+        </div>
+      </div>
+
+      <div class="subcard">
+        <h3>5.3 代扣 transferFrom()</h3>
+        <div class="grid three">
+          <label>
+            <span>出币地址 `_from`</span>
+            <input id="transferFromOwner" placeholder="0x..." />
+          </label>
+          <label>
+            <span>收币地址 `_to`</span>
+            <input id="transferFromTo" placeholder="0x..." />
+          </label>
+          <label>
+            <span>代扣数量 `_value`</span>
+            <input id="transferFromAmount" placeholder="例如 2" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="transferFromBtn">发送 transferFrom()</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>最近交易</h2>
+      <p class="hint">交易发送后会展示交易哈希，并在确认后自动刷新余额和授权状态。</p>
+      <div class="stat">
+        <span class="label">Last Tx Hash</span>
+        <strong id="lastTxHash" class="mono small">-</strong>
+      </div>
+    </section>
+  </main>
+
+  <script src="./contract.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

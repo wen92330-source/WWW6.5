@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Fitness Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🏃 Simple Fitness Tracker</h1>
+
+        <!-- Connection Status -->
+        <div class="status-bar">
+            <span id="connectionStatus">Not Connected</span>
+            <button id="connectBtn" class="btn">Connect Wallet</button>
+        </div>
+
+        <!-- Register Section -->
+        <div class="section" id="registerSection">
+            <h2>Register User</h2>
+            <input type="text" id="userName" placeholder="Enter your name">
+            <input type="number" id="userWeight" placeholder="Enter your weight (kg)">
+            <button class="btn" onclick="registerUser()">Register</button>
+        </div>
+
+        <!-- User Profile -->
+        <div class="section" id="profileSection" style="display: none;">
+            <h2>Your Profile</h2>
+            <p><strong>Name:</strong> <span id="profileName"></span></p>
+            <p><strong>Weight:</strong> <span id="profileWeight"></span> kg</p>
+            <p><strong>Total Workouts:</strong> <span id="totalWorkouts"></span></p>
+            <p><strong>Total Distance:</strong> <span id="totalDistance"></span> m</p>
+
+            <div class="update-weight">
+                <h3>Update Weight</h3>
+                <input type="number" id="newWeight" placeholder="New weight (kg)">
+                <button class="btn" onclick="updateWeight()">Update</button>
+            </div>
+        </div>
+
+        <!-- Log Activity Section -->
+        <div class="section" id="activitySection" style="display: none;">
+            <h2>Log Activity</h2>
+            <input type="text" id="activityType" placeholder="Activity type (e.g., Running)">
+            <input type="number" id="duration" placeholder="Duration (minutes)">
+            <input type="number" id="distance" placeholder="Distance (meters)">
+            <button class="btn" onclick="logActivity()">Log Activity</button>
+        </div>
+
+        <!-- Events Log -->
+        <div class="section">
+            <h2>Events Log</h2>
+            <div id="eventsLog" class="events-container">
+                <p class="no-events">No events yet. Connect your wallet and start using the app!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载 ethers.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

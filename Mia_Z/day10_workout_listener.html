@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day10 WorkoutLogged 监听器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      background: #f6f8fa;
+      color: #222;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      max-width: 900px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    input {
+      min-width: 260px;
+      padding: 8px 10px;
+      border: 1px solid #cfd4dc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 8px 12px;
+      border: 1px solid #cfd4dc;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #f3f4f6;
+    }
+    #status {
+      font-size: 14px;
+      color: #374151;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h2>SimpleFitnessTracker - WorkoutLogged 监听器</h2>
+
+  <div class="card">
+    <div class="row">
+      <button id="connectBtn">1) 连接 MetaMask</button>
+      <div id="walletInfo" class="muted">未连接</div>
+    </div>
+    <div class="row">
+      <input id="contractAddress" placeholder="2) 粘贴合约地址 (0x...)" />
+      <button id="loadHistoryBtn">读取历史事件</button>
+      <button id="listenBtn">开始实时监听</button>
+      <button id="stopBtn">停止监听</button>
+    </div>
+    <div id="status">状态：等待连接钱包</div>
+  </div>
+
+  <div class="card">
+    <h3>WorkoutLogged 列表</h3>
+    <ul id="eventList"></ul>
+  </div>
+
+  <script>
+    const ABI = [
+      "event WorkoutLogged(address indexed userAddress,string activityType,uint256 duration,uint256 distance,uint256 timestamp)"
+    ];
+
+    let provider;
+    let signer;
+    let contract;
+    let listenerAttached = false;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const loadHistoryBtn = document.getElementById("loadHistoryBtn");
+    const listenBtn = document.getElementById("listenBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const walletInfo = document.getElementById("walletInfo");
+    const statusEl = document.getElementById("status");
+    const eventListEl = document.getElementById("eventList");
+    const contractAddressInput = document.getElementById("contractAddress");
+
+    function setStatus(msg) {
+      statusEl.textContent = `状态：${msg}`;
+    }
+
+    function fmtDate(unixSec) {
+      const d = new Date(Number(unixSec) * 1000);
+      return d.toLocaleString();
+    }
+
+    function prependEventItem(item) {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div><strong>用户:</strong> ${item.userAddress}</div>
+        <div><strong>类型:</strong> ${item.activityType}</div>
+        <div><strong>时长:</strong> ${item.duration} 秒</div>
+        <div><strong>距离:</strong> ${item.distance} 米</div>
+        <div><strong>记录时间:</strong> ${fmtDate(item.timestamp)}</div>
+        <div class="muted">tx: ${item.txHash}</div>
+      `;
+      eventListEl.prepend(li);
+    }
+
+    async function ensureContract() {
+      const address = contractAddressInput.value.trim();
+      if (!address) {
+        throw new Error("请先输入合约地址");
+      }
+      if (!provider) {
+        throw new Error("请先连接钱包");
+      }
+      contract = new ethers.Contract(address, ABI, provider);
+      return contract;
+    }
+
+    connectBtn.addEventListener("click", async () => {
+      try {
+        if (!window.ethereum) {
+          throw new Error("未检测到 MetaMask，请先安装插件");
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+
+        const addr = await signer.getAddress();
+        const network = await provider.getNetwork();
+        walletInfo.textContent = `已连接: ${addr} | chainId: ${network.chainId.toString()}`;
+        setStatus("钱包连接成功");
+      } catch (err) {
+        setStatus(`连接失败 - ${err.message}`);
+      }
+    });
+
+    loadHistoryBtn.addEventListener("click", async () => {
+      try {
+        const c = await ensureContract();
+        setStatus("读取历史事件中...");
+        eventListEl.innerHTML = "";
+
+        const filter = c.filters.WorkoutLogged();
+        const logs = await c.queryFilter(filter, 0, "latest");
+
+        for (const log of logs) {
+          const { userAddress, activityType, duration, distance, timestamp } = log.args;
+          prependEventItem({
+            userAddress,
+            activityType,
+            duration: duration.toString(),
+            distance: distance.toString(),
+            timestamp: timestamp.toString(),
+            txHash: log.transactionHash
+          });
+        }
+
+        setStatus(`历史事件读取完成，共 ${logs.length} 条`);
+      } catch (err) {
+        setStatus(`读取失败 - ${err.message}`);
+      }
+    });
+
+    listenBtn.addEventListener("click", async () => {
+      try {
+        const c = await ensureContract();
+
+        if (listenerAttached) {
+          setStatus("监听已开启，无需重复开启");
+          return;
+        }
+
+        c.on("WorkoutLogged", (userAddress, activityType, duration, distance, timestamp, eventLog) => {
+          prependEventItem({
+            userAddress,
+            activityType,
+            duration: duration.toString(),
+            distance: distance.toString(),
+            timestamp: timestamp.toString(),
+            txHash: eventLog.log.transactionHash
+          });
+        });
+
+        listenerAttached = true;
+        setStatus("已开始实时监听 WorkoutLogged");
+      } catch (err) {
+        setStatus(`监听失败 - ${err.message}`);
+      }
+    });
+
+    stopBtn.addEventListener("click", async () => {
+      try {
+        if (contract && listenerAttached) {
+          contract.removeAllListeners("WorkoutLogged");
+          listenerAttached = false;
+          setStatus("已停止监听");
+        } else {
+          setStatus("当前没有激活的监听器");
+        }
+      } catch (err) {
+        setStatus(`停止失败 - ${err.message}`);
+      }
+    });
+  </script>
+</body>
+</html>

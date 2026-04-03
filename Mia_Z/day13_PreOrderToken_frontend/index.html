@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PreOrderToken 预售代币 教学 DApp</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <section class="hero card">
+      <div>
+        <p class="eyebrow">Day13 PreOrderToken Demo</p>
+        <h1>PreOrderToken 预售代币 教学前端</h1>
+        <p class="hint">
+          演示预售流程：用 ETH 购买代币（buyTokens）、销售结束后项目方 finalizeSale 提走 ETH，之后代币可自由 transfer。读操作免费，写操作需钱包签名与 gas。
+        </p>
+      </div>
+      <div id="status" class="status">状态：等待连接钱包</div>
+    </section>
+
+    <section class="card">
+      <h2>1. 钱包与合约</h2>
+      <p class="hint">先连接钱包，再输入在 Remix 部署好的 PreOrderToken 合约地址。</p>
+      <div class="row">
+        <button id="connectBtn">连接 MetaMask</button>
+        <button id="refreshWalletBtn">刷新钱包信息</button>
+        <span id="walletInfo" class="pill">未连接</span>
+      </div>
+      <div class="grid two">
+        <label>
+          <span>合约地址</span>
+          <input id="contractAddress" placeholder="输入 PreOrderToken 合约地址 (0x...)" />
+        </label>
+        <div class="action-inline">
+          <button id="initContractBtn">初始化合约</button>
+          <span id="contractInfo" class="pill">未初始化</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. 代币与销售信息</h2>
+      <p class="hint">读取 name、symbol、总供应量及销售参数（价格、时间、限额、是否进行中）。</p>
+      <div class="grid four stats">
+        <div class="stat">
+          <span class="label">Name</span>
+          <strong id="tokenName">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Symbol</span>
+          <strong id="tokenSymbol">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">Total Supply</span>
+          <strong id="tokenSupply">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">销售状态</span>
+          <strong id="saleActive">-</strong>
+        </div>
+      </div>
+      <div class="grid four stats">
+        <div class="stat">
+          <span class="label">代币单价 (ETH)</span>
+          <strong id="tokenPrice">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">最小/最大购买 (ETH)</span>
+          <strong id="minMaxPurchase">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">剩余时间 (秒)</span>
+          <strong id="timeRemaining">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">剩余可售代币</span>
+          <strong id="tokensAvailable">-</strong>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="label">已募集 ETH / 是否已结束</span>
+        <strong id="totalRaisedAndFinalized">-</strong>
+      </div>
+      <div class="row">
+        <button id="refreshSaleBtn">刷新销售与代币信息</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. 我的资产</h2>
+      <p class="hint">当前账户的代币余额与地址。</p>
+      <div class="grid two">
+        <div class="stat">
+          <span class="label">当前账户代币余额</span>
+          <strong id="myBalance">-</strong>
+        </div>
+        <div class="stat">
+          <span class="label">当前账户地址</span>
+          <strong id="currentAccount" class="mono small">-</strong>
+        </div>
+      </div>
+      <div class="row">
+        <button id="refreshBalanceBtn">刷新我的余额</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. 用 ETH 购买代币</h2>
+      <p class="hint">调用 buyTokens() 并附带 ETH（需在销售期内且金额在 min/max 之间）。</p>
+      <div class="grid two">
+        <label>
+          <span>支付 ETH 数量</span>
+          <input id="buyEthAmount" placeholder="例如 0.01" />
+        </label>
+      </div>
+      <div class="row">
+        <button id="buyTokensBtn">发送 buyTokens（附带 ETH）</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. 结束销售（仅项目方）</h2>
+      <p class="hint">仅 projectOwner 可在销售时间结束后调用 finalizeSale()，将合约内 ETH 提走并解锁代币转账。</p>
+      <div class="row">
+        <button id="finalizeSaleBtn">结束销售 finalizeSale()</button>
+        <span id="ownerHint" class="pill">当前账户需为 projectOwner</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6. 代币转账（销售结束后可用）</h2>
+      <p class="hint">finalized 后即可自由 transfer；预售期间代币锁定，仅能通过 buyTokens 获得。</p>
+      <div class="grid two">
+        <label>
+          <span>接收地址 _to</span>
+          <input id="transferTo" placeholder="0x..." />
+        </label>
+        <label>
+          <span>转账数量 _value</span>
+          <input id="transferAmount" placeholder="例如 1.5" />
+        </label>
+      </div>
+      <div class="row">
+        <button id="transferBtn">发送 transfer()</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>最近交易</h2>
+      <div class="stat">
+        <span class="label">Last Tx Hash</span>
+        <strong id="lastTxHash" class="mono small">-</strong>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Remix 测试与验证步骤</h2>
+      <p class="hint">在 Remix 中编译、部署并复制合约地址到本页面后，按下面步骤验证。</p>
+      <ol class="steps-list">
+        <li><strong>编译：</strong> 在 Remix 打开 day13_PreOrderToken.sol，确保已加载 day12_SimpleERC20_OpenZeppelin.sol 及 OpenZeppelin 依赖，选择编译器 0.8.x，编译。</li>
+        <li><strong>部署：</strong> 切换到「Deploy」，构造函数示例：initialSupply=1000, tokenPrice=1e15（0.001 ETH/枚）, saleDuration=300（秒）, minPurchase=1e16（0.01 ETH）, maxPurchase=1e18（1 ETH）, projectOwner=你的钱包地址。部署后复制合约地址。</li>
+        <li><strong>连接前端：</strong> 本页连接 MetaMask（同一网络），粘贴合约地址并点击「初始化合约」。</li>
+        <li><strong>验证读：</strong> 点击「刷新销售与代币信息」，确认 name/symbol、单价、剩余时间、剩余可售代币、销售状态正确。</li>
+        <li><strong>购买：</strong> 输入 0.01～1 ETH 之间的数值，点击「发送 buyTokens」并确认交易；刷新后「我的代币余额」应增加，剩余可售代币减少。</li>
+        <li><strong>结束销售：</strong> 用 projectOwner 账户在 Remix 或本页点击「结束销售」；需等 saleEndTime 过后再调用。成功后 finalized 为 true，合约内 ETH 转给 projectOwner。</li>
+        <li><strong>转账：</strong> 销售结束后，用持有代币的账户在本页填写接收地址和数量，点击「发送 transfer()」，确认链上转账成功并刷新余额。</li>
+      </ol>
+    </section>
+  </main>
+
+  <script src="./contract.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

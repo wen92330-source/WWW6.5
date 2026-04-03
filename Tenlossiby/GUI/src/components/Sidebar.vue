@@ -28,37 +28,50 @@
       </ul>
     </div>
 
-    <div class="sidebar-card">
+    <!-- 实时数据（动态显示）-->
+    <div class="sidebar-card" v-if="realtimeData">
       <h3>📊 实时数据</h3>
       <div class="realtime-data">
-        <div class="data-row">
-          <span class="label">计数值：</span>
-          <span class="value">{{ counter }}</span>
+        <!-- Gas 消耗统计 -->
+        <div v-if="realtimeData.operationCount > 0">
+          <div class="data-row">
+            <span class="label">操作次数：</span>
+            <span class="value">{{ realtimeData.operationCount }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">Gas 消耗：</span>
+            <span class="value">{{ realtimeData.gasUsage.toLocaleString() }}</span>
+          </div>
+          <div class="data-row">
+            <span class="label">ETH 费用：</span>
+            <span class="value">{{ realtimeData.ethCost.toFixed(6) }}</span>
+          </div>
         </div>
-        <div class="data-row">
-          <span class="label">点击次数：</span>
-          <span class="value">{{ interactionCount }}</span>
-        </div>
-        <div class="data-row">
-          <span class="label">Gas 消耗：</span>
-          <span class="value">{{ totalGas.toLocaleString() }}</span>
-        </div>
-        <div class="data-row">
-          <span class="label">ETH 费用：</span>
-          <span class="value">{{ totalEthCost.toFixed(6) }}</span>
+
+        <!-- 无操作提示 -->
+        <div v-else class="no-operations">
+          暂无操作记录
         </div>
       </div>
     </div>
 
+    <!-- 操作日志（简化版）-->
     <div class="sidebar-card">
       <h3>📋 操作日志</h3>
       <div class="operation-log">
-        <p v-if="logs.length === 0" style="color: #999; font-size: 0.85em; text-align: center; padding: 20px;">暂无操作记录</p>
-        <div v-else v-for="log in logs.slice(0, 10)" :key="log.id" class="log-entry">
-          <div class="timestamp">{{ log.timestamp }}</div>
-          <div><strong>{{ log.operation }}</strong> {{ log.details }}</div>
-          <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
-            Gas: {{ log.gasUsed.toLocaleString() }} | ETH: {{ log.ethCost.toFixed(6) }}
+        <p v-if="currentDayLogs.length === 0" class="no-operations">暂无操作记录</p>
+        <div v-else>
+          <div v-for="log in currentDayLogs.slice(0, 10)" :key="log.id" class="log-entry">
+            <div class="data-row">
+              <span class="timestamp">{{ log.timestamp }}</span>
+              <span><strong>{{ log.operation }}</strong> {{ log.details }}</span>
+            </div>
+            <div v-if="log.gasUsed > 0" class="data-row gas-info">
+              <span class="label">Gas:</span>
+              <span class="value">{{ log.gasUsed.toLocaleString() }}</span>
+              <span class="label" style="margin-left: 15px;">ETH:</span>
+              <span class="value">{{ log.ethCost.toFixed(6) }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -69,17 +82,16 @@
 <script setup>
 import { computed } from 'vue'
 import { dayConfigs } from '../data/days'
-import { conceptDefinitions, gasEstimates, ethPricePerGwei } from '../data/concepts'
+import { conceptDefinitions, day11ConceptDefinitions, day12ConceptDefinitions, day13ConceptDefinitions, day14ConceptDefinitions, day15ConceptDefinitions, day16ConceptDefinitions, day17ConceptDefinitions, day18ConceptDefinitions, day19ConceptDefinitions, day20ConceptDefinitions, day21ConceptDefinitions } from '../data/concepts'
+import { useOperationLogStore } from '@/stores/operationLogStore'
 
 const props = defineProps({
-  counter: {
-    type: Number,
-    default: 0
+  // 新增：实时数据接口
+  realtimeData: {
+    type: Object,
+    default: null
   },
-  interactionCount: {
-    type: Number,
-    default: 0
-  },
+  // 保留原有的进度数据
   dayProgress: {
     type: Object,
     required: true
@@ -90,39 +102,11 @@ const props = defineProps({
   }
 })
 
-const logs = computed(() => {
-  const result = []
-  const currentProgress = props.dayProgress[props.currentDay]
-  if (!currentProgress) return result
+const logStore = useOperationLogStore()
 
-  const unlockedConcepts = currentProgress.unlockedConcepts || []
-  unlockedConcepts.forEach((conceptKey, index) => {
-    result.push({
-      id: `log-${index}`,
-      timestamp: new Date().toLocaleTimeString(),
-      operation: '解锁概念',
-      details: conceptDefinitions[conceptKey]?.name || conceptKey,
-      gasUsed: 0,
-      ethCost: 0
-    })
-  })
-
-  if (props.interactionCount > 0) {
-    const clickGas = (props.interactionCount - 1) * gasEstimates.increment
-    const clickEth = clickGas * ethPricePerGwei
-    if (clickGas > 0) {
-      result.push({
-        id: 'click-log',
-        timestamp: new Date().toLocaleTimeString(),
-        operation: '点击计数器',
-        details: `累计 ${props.interactionCount} 次点击`,
-        gasUsed: clickGas,
-        ethCost: clickEth
-      })
-    }
-  }
-
-  return result.sort((a, b) => b.id.localeCompare(a.id))
+// 获取当前day的日志（最近10条）
+const currentDayLogs = computed(() => {
+  return logStore.getDayLogs(props.currentDay)
 })
 
 const progressPercentage = computed(() => {
@@ -148,8 +132,34 @@ const currentDayConcepts = computed(() => {
   const currentProgress = props.dayProgress[props.currentDay]
   const unlockedConcepts = currentProgress?.unlockedConcepts || []
 
+  // 根据 day 选择正确的概念定义对象
+  let conceptDefs = conceptDefinitions
+  if (props.currentDay === 11) {
+    conceptDefs = day11ConceptDefinitions
+  } else if (props.currentDay === 12) {
+    conceptDefs = day12ConceptDefinitions
+  } else if (props.currentDay === 13) {
+    conceptDefs = day13ConceptDefinitions
+  } else if (props.currentDay === 14) {
+    conceptDefs = day14ConceptDefinitions
+  } else if (props.currentDay === 15) {
+    conceptDefs = day15ConceptDefinitions
+  } else if (props.currentDay === 16) {
+    conceptDefs = day16ConceptDefinitions
+  } else if (props.currentDay === 17) {
+    conceptDefs = day17ConceptDefinitions
+  } else if (props.currentDay === 18) {
+    conceptDefs = day18ConceptDefinitions
+  } else if (props.currentDay === 19) {
+    conceptDefs = day19ConceptDefinitions
+  } else if (props.currentDay === 20) {
+    conceptDefs = day20ConceptDefinitions
+  } else if (props.currentDay === 21) {
+    conceptDefs = day21ConceptDefinitions
+  }
+
   return dayConfig.concepts.map(conceptKey => {
-    const concept = conceptDefinitions[conceptKey]
+    const concept = conceptDefs[conceptKey]
     return {
       key: conceptKey,
       name: concept?.name || conceptKey,
@@ -158,15 +168,51 @@ const currentDayConcepts = computed(() => {
     }
   })
 })
-
-const totalGas = computed(() => {
-  return props.interactionCount * gasEstimates.increment
-})
-
-const totalEthCost = computed(() => {
-  return totalGas.value * ethPricePerGwei
-})
 </script>
 
 <style scoped>
+/* 实时数据和操作日志的通用样式 */
+.data-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.data-row .label {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  min-width: fit-content;
+}
+
+.data-row .value {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.no-operations {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 20px;
+}
+
+/* 操作日志特有样式 */
+.log-entry {
+  border-bottom: 1px solid var(--border-main);
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.timestamp {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  min-width: 80px;
+}
+
+.gas-info {
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
 </style>

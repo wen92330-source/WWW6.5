@@ -1,2 +1,6 @@
 node_modules/
 DailySolLearningGUI.html
+App.vue.backup
+.trae/
+.claude/
+.vite/

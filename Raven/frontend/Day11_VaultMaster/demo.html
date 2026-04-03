@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault Master - UI Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏦 Vault Master (Demo Mode)</h1>
+            <p class="subtitle">UI Demo - No Wallet Required</p>
+            <div class="demo-badge">DEMO MODE</div>
+        </header>
+
+        <main>
+            <!-- Contract Info Section -->
+            <section class="card">
+                <h2>📋 Contract Information</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Contract Owner:</span>
+                        <span class="value mono">0x1234...5678</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Your Address:</span>
+                        <span class="value mono">0xabcd...ef00</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Vault Balance:</span>
+                        <span class="value">5.25 ETH</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Your Status:</span>
+                        <span class="value badge badge-owner">Owner</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deposit Section -->
+            <section class="card">
+                <h2>💰 Deposit ETH</h2>
+                <p class="description">Anyone can deposit ETH into the vault</p>
+                <div class="input-group">
+                    <label for="depositAmount">Amount (ETH):</label>
+                    <input type="number" id="depositAmount" placeholder="0.01" step="0.001" min="0.001" value="0.5">
+                    <button class="btn btn-success" onclick="demoDeposit()">Deposit ETH</button>
+                </div>
+            </section>
+
+            <!-- Withdraw Section (Owner Only) -->
+            <section class="card owner-only">
+                <h2>🏧 Withdraw ETH (Owner Only)</h2>
+                <p class="description">Only the contract owner can withdraw funds</p>
+                <div class="input-group">
+                    <label for="withdrawTo">Recipient Address:</label>
+                    <input type="text" id="withdrawTo" placeholder="0x..." value="0x9876543210abcdef9876543210abcdef98765432">
+                </div>
+                <div class="input-group">
+                    <label for="withdrawAmount">Amount (ETH):</label>
+                    <input type="number" id="withdrawAmount" placeholder="0.01" step="0.001" min="0.001" value="1.0">
+                    <button class="btn btn-danger" onclick="demoWithdraw()">Withdraw ETH</button>
+                </div>
+            </section>
+
+            <!-- Transfer Ownership Section (Owner Only) -->
+            <section class="card owner-only">
+                <h2>🔐 Transfer Ownership (Owner Only)</h2>
+                <p class="description">Transfer contract ownership to a new address</p>
+                <div class="input-group">
+                    <label for="newOwner">New Owner Address:</label>
+                    <input type="text" id="newOwner" placeholder="0x..." value="0xfedcba0987654321fedcba0987654321fedcba09">
+                    <button class="btn btn-warning" onclick="demoTransfer()">Transfer Ownership</button>
+                </div>
+            </section>
+
+            <!-- Transaction History -->
+            <section class="card">
+                <h2>📜 Recent Activity</h2>
+                <div id="activityLog" class="activity-log">
+                    <div class="activity-item">
+                        <span class="activity-type deposit">📥 Deposit</span>
+                        <span class="activity-details">0.5 ETH from 0xabcd...ef00</span>
+                        <span class="activity-time">2 minutes ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-type withdraw">📤 Withdraw</span>
+                        <span class="activity-details">1.0 ETH to 0x9876...5432</span>
+                        <span class="activity-time">15 minutes ago</span>
+                    </div>
+                    <div class="activity-item">
+                        <span class="activity-type ownership">🔐 Ownership Transfer</span>
+                        <span class="activity-details">From 0x1111...2222 to 0x1234...5678</span>
+                        <span class="activity-time">1 hour ago</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🎨 This is a UI demo. For full functionality, use index.html with MetaMask</p>
+        </footer>
+    </div>
+
+    <script>
+        function demoDeposit() {
+            const amount = document.getElementById('depositAmount').value;
+            addActivity('deposit', `${amount} ETH from 0xabcd...ef00`, 'Just now');
+            alert(`Demo: Deposited ${amount} ETH successfully!`);
+        }
+
+        function demoWithdraw() {
+            const to = document.getElementById('withdrawTo').value;
+            const amount = document.getElementById('withdrawAmount').value;
+            addActivity('withdraw', `${amount} ETH to ${to.slice(0, 6)}...${to.slice(-4)}`, 'Just now');
+            alert(`Demo: Withdrew ${amount} ETH to ${to}!`);
+        }
+
+        function demoTransfer() {
+            const newOwner = document.getElementById('newOwner').value;
+            addActivity('ownership', `To ${newOwner.slice(0, 6)}...${newOwner.slice(-4)}`, 'Just now');
+            alert(`Demo: Ownership transferred to ${newOwner}!`);
+        }
+
+        function addActivity(type, details, time) {
+            const log = document.getElementById('activityLog');
+            const item = document.createElement('div');
+            item.className = 'activity-item';
+
+            const icons = {
+                'deposit': '📥 Deposit',
+                'withdraw': '📤 Withdraw',
+                'ownership': '🔐 Ownership Transfer'
+            };
+
+            item.innerHTML = `
+                <span class="activity-type ${type}">${icons[type]}</span>
+                <span class="activity-details">${details}</span>
+                <span class="activity-time">${time}</span>
+            `;
+
+            log.insertBefore(item, log.firstChild);
+        }
+    </script>
+</body>
+</html>

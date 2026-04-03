@@ -1,3 +1,5 @@
+/* 导入 Day 组件通用样式 */
+@import './day-common.css';
 
 :root {
   --bg-base: #fdf6e3;
@@ -6,6 +8,7 @@
   --text-muted: #93a1a1;
   --border-main: #d3cbb8;
   --accent-yellow: #b58900;
+  --accent-yellow-hover: #d49b00;
   --accent-cyan: #2aa198;
   --accent-cyan-hover: #218079;
   --accent-green: #859900;
@@ -35,8 +38,9 @@
   --bg-surface-1: #073642;
   --text-main: #839496;
   --text-muted: #586e75; 
-  --border-main: #002b36; /* Darker border in dark mode */
+  --border-main: #1a4a5a; /* Visible border in dark mode */
   --accent-yellow: #b58900;
+  --accent-yellow-hover: #d49b00;
   --accent-cyan: #2aa198;
   --accent-cyan-hover: #218079;
   --accent-green: #859900;
@@ -67,6 +71,10 @@
     box-sizing: border-box;
 }
 
+html {
+    background: var(--bg-base);
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -80,6 +88,7 @@ body {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background: var(--bg-base);
 }
 
 .header {
@@ -90,8 +99,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid var(--accent-yellow);
     gap: 20px;
+    z-index: 1000;
+    position: relative;
+    border-bottom: 1px solid var(--border-main);
 }
 
 .header-center {
@@ -147,17 +158,24 @@ body {
 .main-layout {
     display: flex;
     flex: 1;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
     gap: 20px;
+    height: 100vh;
+    background: var(--bg-base);
+}
+
+.content-wrapper {
+    flex: 1;
+    min-width: 0;
 }
 
 .left-sidebar {
-    width: 200px;
+    width: 240px;
     background: var(--bg-base);
     border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 4px 6px var(--shadow-base-1);
+    padding: 25px;
     overflow-y: auto;
     flex-shrink: 0;
     border: 1px solid var(--border-main);
@@ -171,8 +189,9 @@ body {
     font-size: 1.1em;
     color: var(--accent-yellow);
     margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--accent-yellow);
+    margin-top: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-main);
 }
 
 .day-nav-item {
@@ -221,17 +240,17 @@ body {
     border-radius: 10px;
     padding: 25px;
     box-shadow: 0 4px 6px var(--shadow-base-1);
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     border: 1px solid var(--border-main);
+    /* 注意：不要设置 overflow-y，否则会影响 sticky 定位 */
 }
 
 .day-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     padding-bottom: 15px;
     border-bottom: 2px solid var(--accent-yellow);
 }
@@ -324,6 +343,96 @@ body {
     font-size: 1em;
     flex: 1;
     min-width: 200px;
+}
+
+/* ==================== Day 组件通用按钮样式 ==================== */
+/* 所有 Day 组件的交互按钮都应该使用这个基础样式 */
+.day-action-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: var(--bg-base) !important;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.day-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Day 特定颜色变体 */
+.day-action-btn.blue {
+    background: var(--accent-blue);
+}
+
+.day-action-btn.blue:hover {
+    background: var(--accent-blue-hover);
+}
+
+.day-action-btn.yellow {
+    background: var(--accent-yellow);
+}
+
+.day-action-btn.yellow:hover {
+    background: var(--accent-yellow-hover);
+}
+
+.day-action-btn.orange {
+    background: var(--accent-orange);
+}
+
+.day-action-btn.orange:hover {
+    background: #e85d2c;
+}
+
+.day-action-btn.green {
+    background: var(--accent-green);
+}
+
+.day-action-btn.green:hover {
+    background: var(--accent-green-hover);
+}
+
+.day-action-btn.magenta {
+    background: var(--accent-magenta);
+}
+
+.day-action-btn.magenta:hover {
+    background: #e84a8f;
+}
+
+.day-action-btn.cyan {
+    background: var(--accent-cyan);
+}
+
+.day-action-btn.cyan:hover {
+    background: var(--accent-cyan-hover);
+}
+
+.day-action-btn.red {
+    background: var(--accent-red);
+}
+
+.day-action-btn.red:hover {
+    background: var(--accent-red-hover);
+}
+
+.day-action-btn.purple {
+    background: #a855f7;
+}
+
+.day-action-btn.purple:hover {
+    background: #9333ea;
+}
+
+.day-action-btn.small {
+    padding: 8px 16px;
+    font-size: 0.9em;
 }
 
 .result-display {
@@ -422,11 +531,11 @@ body {
     color: var(--text-muted);
     padding: 15px;
     border-radius: 6px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 0.9em;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
     margin-top: 10px;
     overflow-x: auto;
-    line-height: 1.5;
+    line-height: 1.3;
     border: 1px solid var(--code-border);
     white-space: pre-wrap;
     word-break: break-word;
@@ -451,7 +560,7 @@ body {
 }
 
 .full-code-container {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.9em;
     line-height: 1.6;
     color: var(--text-muted);
@@ -565,8 +674,7 @@ body {
     width: 300px;
     background: var(--bg-base);
     border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 4px 6px var(--shadow-base-1);
+    padding: 25px;
     overflow-y: auto;
     flex-shrink: 0;
     display: flex;
@@ -581,15 +689,20 @@ body {
 
 .sidebar-card {
     background: var(--bg-surface-1);
-    border-radius: 8px;
-    padding: 15px;
+    border-radius: 10px;
+    padding: 25px;
     border: 1px solid var(--border-main);
+}
+
+.sidebar-card:first-child {
+    margin-top: 0;
 }
 
 .sidebar-card h3 {
     font-size: 1em;
     color: var(--accent-yellow);
     margin-bottom: 12px;
+    margin-top: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -719,6 +832,18 @@ body {
 
 .sidebar-overlay {
     display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
 }
 
 @media (max-width: 1400px) {
@@ -726,8 +851,17 @@ body {
         display: none;
     }
 
+    .right-sidebar {
+        display: none;
+    }
+
     .main-layout {
         padding: 15px;
+    }
+
+    .content-wrapper {
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .center-content {
@@ -736,6 +870,55 @@ body {
 
     .day-header h2 {
         font-size: 1.5em;
+    }
+
+    /* 移动端左侧栏滑入动画 */
+    .left-sidebar.mobile-visible {
+        display: block !important;
+        position: fixed !important;
+        z-index: 1001;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px;
+        max-width: 80vw;
+        background: var(--bg-base);
+        border-radius: 0;
+        border-right: 2px solid var(--accent-yellow);
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        padding-top: 60px;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .left-sidebar.mobile-visible.show {
+        transform: translateX(0);
+    }
+
+    /* 移动端右侧栏滑入动画 */
+    .right-sidebar.mobile-visible {
+        display: block !important;
+        position: fixed !important;
+        z-index: 1001;
+        top: 0;
+        right: 0;
+        left: auto;
+        height: 100vh;
+        width: 280px;
+        max-width: 80vw;
+        background: var(--bg-base);
+        border-radius: 0;
+        border-left: 2px solid var(--accent-yellow);
+        box-shadow: -4px 0 10px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        padding-top: 60px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .right-sidebar.mobile-visible.show {
+        transform: translateX(0);
     }
 }
 
@@ -748,12 +931,42 @@ body {
         padding: 10px;
     }
 
+    .content-wrapper {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
     .center-content {
         padding: 20px;
     }
 
     .day-header h2 {
         font-size: 1.3em;
+    }
+
+    /* 移动端右侧栏滑入动画 */
+    .right-sidebar.mobile-visible {
+        display: block !important;
+        position: fixed !important;
+        z-index: 1001;
+        top: 0;
+        right: 0;
+        left: auto;
+        height: 100vh;
+        width: 280px;
+        max-width: 80vw;
+        background: var(--bg-base);
+        border-radius: 0;
+        border-left: 2px solid var(--accent-yellow);
+        box-shadow: -4px 0 10px rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
+        padding-top: 60px;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .right-sidebar.mobile-visible.show {
+        transform: translateX(0);
     }
 
     .interaction-controls {
@@ -796,6 +1009,11 @@ body {
 
     .main-layout {
         padding: 5px;
+    }
+
+    .content-wrapper {
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .center-content {
@@ -851,42 +1069,17 @@ body {
 
     .left-sidebar.mobile-visible,
     .right-sidebar.mobile-visible {
-        display: block;
-        position: fixed;
-        z-index: 1000;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 280px;
-        max-width: 80vw;
-        background: var(--bg-base);
-        border-right: 2px solid var(--accent-yellow);
-        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
-        overflow-y: auto;
-        padding-top: 60px;
+        /* 继承上面定义的样式，只需要确保z-index正确 */
+        z-index: 1001;
     }
 
-    .right-sidebar.mobile-visible {
-        right: 0;
-        left: auto;
-        border-right: none;
-        border-left: 2px solid var(--accent-yellow);
-    }
-
-    .sidebar-overlay {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+    .content-wrapper {
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .center-content {
         width: 100%;
-        margin: 0;
     }
 }
 
@@ -898,6 +1091,11 @@ body {
     .warning-banner {
         font-size: 0.7em;
         padding: 6px 10px;
+    }
+
+    .content-wrapper {
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .center-content {
@@ -1188,47 +1386,7 @@ body {
     }
 }
 
-.content-layout {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-}
-
-.left-column {
-    flex: 6;
-    min-width: 0;
-}
-
-.right-column {
-    flex: 4;
-    min-width: 0;
-    position: sticky;
-    top: 20px;
-    align-self: flex-start;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    /* 隐藏滚动条但保留滚动功能 */
-    scrollbar-width: none;
-    /* Firefox */
-    -ms-overflow-style: none;
-    /* IE/Edge */
-}
-
-/* Chrome/Safari/Opera 隐藏滚动条 */
-.right-column::-webkit-scrollbar {
-    display: none;
-}
-
-@media (max-width: 768px) {
-    .content-layout {
-        flex-direction: column;
-    }
-
-    .left-column,
-    .right-column {
-        width: 100%;
-    }
-}
+/* 布局样式已迁移到 day-common.css，使用 Grid 布局 */
 
 .day-4-content .input-group {
     display: flex;
@@ -1526,37 +1684,11 @@ body {
 }
 
 @media (max-width: 1024px) {
-    .day-5-content .content-layout {
-        justify-content: center;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .day-5-content .left-column {
-        max-width: 800px;
-        width: 100%;
-    }
-
-    .day-5-content .right-column {
-        max-width: 800px;
-        width: 100%;
-    }
+    /* Day5 布局已迁移到 day-common.css */
 }
 
 @media (max-width: 768px) {
-    .day-5-content .content-layout {
-        flex-direction: column;
-    }
-
-    .day-5-content .left-column {
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .day-5-content .right-column {
-        max-width: 100%;
-        width: 100%;
-    }
+    /* Day5 布局已迁移到 day-common.css */
 
     .day-5-content .input-group.label-input-row {
         flex-direction: column;
@@ -1639,7 +1771,7 @@ body {
 }
 
 .day-5-content .function-signature {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.85em;
     background: linear-gradient(135deg, var(--bg-base) 0%, var(--bg-surface-1) 100%);
     color: var(--accent-cyan);
@@ -1728,36 +1860,11 @@ body {
 }
 
 .day-5-content .result-value div {
-    padding: 8px 12px;
-    background: var(--bg-base);
-    border-radius: 6px;
-    border-left: 3px solid var(--accent-magenta);
+    padding: 3px 0;
     font-size: 0.95em;
 }
 
-.day-5-content .content-layout {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    width: 100%;
-    justify-content: center;
-}
-
-.day-5-content .left-column {
-    flex: 0 1 auto;
-    min-width: 0;
-    position: relative;
-    z-index: 1;
-    width: 100%;
-}
-
-.day-5-content .right-column {
-    flex: 0 1 auto;
-    min-width: 0;
-    position: relative;
-    z-index: 2;
-    width: auto;
-}
+/* Day5 布局已迁移到 day-common.css */
 
 .treasure-status {
     background: var(--bg-base);
@@ -1882,7 +1989,7 @@ body {
     border: 2px solid var(--border-main);
     border-radius: 6px;
     font-size: 0.9em;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     background: var(--bg-base);
     color: var(--text-main);
     transition: all 0.3s ease;
@@ -2027,7 +2134,7 @@ body {
 }
 
 .day-6-content .function-signature {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.85em;
     background: linear-gradient(135deg, var(--bg-base) 0%, var(--bg-surface-1) 100%);
     color: var(--accent-cyan);
@@ -2086,18 +2193,7 @@ body {
 }
 
 @media (max-width: 768px) {
-    .day-6-content .content-layout {
-        flex-direction: column;
-    }
-
-    .day-6-content .left-column {
-        width: 100%;
-        margin-bottom: 20px;
-    }
-
-    .day-6-content .right-column {
-        width: 100%;
-    }
+    /* Day6 布局已迁移到 day-common.css */
 
     .day-6-content .input-group.label-input-row {
         flex-direction: column;
@@ -2188,7 +2284,7 @@ body {
 
 /* 函数签名样式对齐 Day 6 */
 .day-7-content .function-signature {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.85em;
     background: linear-gradient(135deg, var(--bg-base) 0%, var(--bg-surface-1) 100%);
     color: var(--accent-cyan);

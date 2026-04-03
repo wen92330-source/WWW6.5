@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+// 重点：引用同目录下的 Ownable.sol（无空格、无多余字符）
+import "./day11_Ownable.sol";
+
+contract VaultMaster is Ownable {
+    event DepositSuccessful(address indexed account, uint256 value);
+    event WithdrawSuccessful(address indexed recipient, uint256 value);
+
+    function getBalance() public view returns(uint256) {
+        return address(this).balance;
+    }
+
+    function deposit() public payable {
+        require(msg.value > 0, "Enter a valid number!");
+        emit DepositSuccessful(msg.sender, msg.value);
+    }
+
+    function withdraw(address _to, uint256 _amount) public onlyOwner {
+        require(_amount <= getBalance(), "Insufficient balance");
+        (bool success, ) = payable(_to).call{value: _amount}("");
+        require(success, "Transfer Failed!");
+        emit WithdrawSuccessful(_to, _amount);
+    }
+}

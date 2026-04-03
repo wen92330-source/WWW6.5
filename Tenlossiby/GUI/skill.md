@@ -1,33 +1,132 @@
 # Solidity学习互动演示GUI开发工作流程 Skill
 
+> 文档版本：20260320 (Day 21 已添加)
+
 ## 项目概述
 
-这是一个基于Vue 3的Solidity学习互动演示GUI，从0到1完整开发的教学界面。
+这是一个基于 Vue 3 + Pinia 的 Solidity 学习互动演示 GUI，从 Day 1 到 Day 30 的完整教学界面。
 
 ## 核心架构
 
 ### 技术栈
 - **前端框架**: Vue 3 (Composition API)
+- **状态管理**: Pinia
 - **构建工具**: Vite
 - **样式**: CSS3 (Flexbox布局)
 - **语言**: JavaScript
 
-### 目录结构
+### 目录结构（20260317更新）
 ```
 GUI/
 ├── src/
 │   ├── components/
-│   │   ├── AppHeader.vue       # 头部组件
-│   │   ├── DayContent.vue      # 日程内容核心组件
-│   │   ├── DayNavigation.vue   # 日程导航组件
-│   │   └── Sidebar.vue         # 进度侧边栏组件
+│   │   ├── AppHeader.vue          # 头部组件
+│   │   ├── DayContent.vue         # 日程内容核心组件（动态导入）
+│   │   ├── DayNavigation.vue      # 日程导航组件
+│   │   ├── Sidebar.vue            # 进度侧边栏组件
+│   │   ├── shared/                # 共享组件
+│   │   │   ├── ComingSoon.vue     # 即将上线提示
+│   │   │   ├── FullCodeModal.vue  # 完整代码弹窗
+│   │   │   ├── KnowledgePanel.vue # 知识面板
+│   │   │   ├── ResizerHandle.vue  # 列宽调节分隔条（实验性）
+│   │   │   └── ResizableLayout.vue # 可调整布局（实验性）
+│   │   └── days/                  # 各Day组件
+│   │       ├── Day1/ClickCounter.vue
+│   │       ├── Day2/SaveMyName.vue
+│   │       ├── Day11/InheritanceDemo.vue
+│   │       ├── Day12/ERC20Token.vue
+│   │       ├── Day13/ERC20TokenAdvanced.vue
+│   │       ├── Day14/SafeDeposit.vue      # 抽象合约 + 接口 + 工厂模式
+│   │       ├── Day15/GasEfficientVoting.vue # Gas 优化技术
+│   │       ├── Day16/PluginStore.vue      # 插件存储系统 + 动态调用
+│   │       ├── Day17/UpgradeHub.vue       # 可升级合约 + 代理模式
+│   │       ├── Day18/OracleContract.vue   # 预言机 + 参数保险
+│   │       ├── Day19/SignThis.vue         # 签名验证 + 无Gas空投
+│   │       ├── Day20/ReentryAttack.vue    # 重入攻击 + 安全防护
+│   │       └── Day21/SimpleNFT.vue        # ERC721 NFT标准 + 铸造/转移/授权
+│   ├── composables/               # 组合式函数
+│   │   ├── useDay1.js
+│   │   ├── useDay2.js
+│   │   ├── useDay11.js
+│   │   ├── useDay12.js
+│   │   ├── useDay13.js
+│   │   ├── useDay14.js            # SafeDeposit 业务逻辑
+│   │   ├── useDay15.js            # GasEfficientVoting 业务逻辑
+│   │   ├── useDay16.js            # PluginStore 业务逻辑 + ABI 编码
+│   │   ├── useDay17.js            # UpgradeHub 业务逻辑 + 升级机制
+│   │   ├── useDay18.js            # OracleContract 业务逻辑 + 双预言机
+│   │   ├── useDay19.js            # SignThis 业务逻辑 + ECDSA签名
+│   │   ├── useDay20.js            # ReentryAttack 业务逻辑 + 重入攻击模拟
+│   │   └── useDay21.js            # SimpleNFT 业务逻辑 + NFT铸造/转移/授权
 │   ├── data/
-│   │   ├── concepts.js         # 概念定义
-│   │   └── days.js             # 日程配置
+│   │   ├── concepts.js            # 概念定义
+│   │   └── days.js                # 日程配置（核心配置）
+│   ├── stores/                    # Pinia 状态管理
+│   │   ├── contractStore.js       # 合约状态
+│   │   └── progressStore.js       # 学习进度
 │   ├── styles/
-│   │   └── main.css            # 全局样式
-│   └── App.vue                 # 主应用组件
+│   │   └── main.css               # 全局样式
+│   └── App.vue                    # 主应用组件
+├── AI_PROMPT_GUIDE.md             # AI开发指南
+└── skill.md                       # 本文件
 ```
+
+### 状态管理架构（20260317更新）
+
+使用 Pinia 进行状态管理，替代了原来的集中式 App.vue 状态。
+
+```javascript
+// contractStore.js - 合约状态
+contracts: {
+  day1: { count, interactionCount },
+  day2: { name, bio, hasStored, hasRetrieved },
+  day3: { candidates, voteCount },
+  day4: { bids, highestBidder, ended },
+  day5: { owner, treasureAmount, allowance },
+  day6: { members, balances, bankManager },
+  day7: { debts, balances, friendList },
+  day8: { owner, totalTips, conversionRates, isUserAdmin },
+  day9: { owner, userAddress, isUserAdmin, scientificCalculatorAddress, isAddressSet, operationCount, operationHistory, challengeTasks },
+  day10: { userProfile, workoutHistory, milestones, totalWorkouts, totalDistance },
+  day11: { owner, userAddress, contractBalance, eventLog, interactionCount },  // 继承 + 所有权管理
+  day12: { tokenName, tokenSymbol, totalSupply, balances, allowances, userAddress },  // ERC20 代币标准
+  day13: { tokenName, tokenSymbol, totalSupply, balances, allowances, userAddress },  // ERC20 + virtual 函数
+  day14: { depositBoxes, eventLog, boxCounter, currentRole, currentAddress },  // 抽象合约 + 接口 + 工厂模式
+  day15: { proposals, proposalCounter, votesCast, storageBits, userAddress, eventLog },  // Gas 优化技术
+  day16: { profiles, plugins, pluginData, currentUser, pluginCounter },  // 插件存储系统 + 动态调用
+  day17: { plans, subscriptions, currentVersion, isUpgraded, paused },  // 可升级合约 + 代理模式
+  day18: { currentUser, currentRole, ethPrice, rainfall, hasInsurance, contractBalance },  // 预言机 + 参数保险
+  day19: { currentRole, currentUserAddress, organizer, generatedSignature, isEntered, participantsList },  // 签名验证 + 无Gas空投
+  day20: { currentRole, vaultBalance, userBalances, reentrancyStatus, isAttacking, attackCount },  // 重入攻击 + 安全防护
+  day21: { nfts, tokenApprovals, operatorApprovals, selectedTokenId, mintForm, transferForm, approveForm, operatorForm, queryForm }  // ERC721 NFT标准 + 铸造/转移/授权
+}
+
+// progressStore.js - 学习进度（自动从 dayConfigs 生成）
+dayProgress: {
+  1: { unlockedConcepts: [], totalConcepts: 4, interactionCount: 0 },
+  2: { unlockedConcepts: [], totalConcepts: 6, interactionCount: 0 },
+  // ... 自动计算 totalConcepts
+}
+```
+
+### 组件架构（20260312重构）
+
+**动态导入**: 使用 `defineAsyncComponent` 实现按需加载
+```javascript
+// DayContent.vue
+const dayComponents = {
+  1: defineAsyncComponent(() => import('./days/Day1/ClickCounter.vue')),
+  2: defineAsyncComponent(() => import('./days/Day2/SaveMyName.vue')),
+  // ...
+}
+```
+
+**共享组件**: 提取公共逻辑到 shared 目录
+- `KnowledgePanel.vue` - 知识面板（右栏）
+- `FullCodeModal.vue` - 完整代码弹窗
+- `ComingSoon.vue` - 未开发天数提示
+
+---
 
 ## 关键开发流程
 
@@ -35,174 +134,157 @@ GUI/
 
 ```bash
 cd GUI
-npm create vite@latest . -- --template vue
 npm install
+npm run dev
 ```
 
-### 2. 实现头部导航
+### 2. 添加新 Day 的标准流程
 
-#### AppHeader.vue开发要点
-
-**核心特性**:
-- 标题居中显示，包含免责声明和作者署名（带GitHub链接）。
-- 左右两侧包含切换按钮（日程在左，进度在右），通过`emit`事件向父组件传递切换请求。
-- 接收`showLeftSidebar`和`showRightSidebar`属性控制按钮激活状态。
-
-### 3. 实现主应用状态管理
-
-#### App.vue核心逻辑
-
-**响应式状态与页面自适应**:
-利用 `ref` 管理侧边栏显示状态和当前日程 (`currentDay`)。
-通过 `onMounted` 监听窗口resize事件：PC端默认展开双侧边栏，移动端（<=768px）默认收起。
-
-**组件挂载**:
-通过props向下传递状态，并通过监听子组件的`emit`事件更新状态。例如，通过`:class="{ 'hidden': !showLeftSidebar }"`动态控制侧边栏显隐。
-
-### 4. 实现日程导航
-
-#### DayNavigation.vue开发
-
-负责显示Day 1-7的日程列表。高亮当前选中日程（`.active`类），并提供点击切换功能。
-
-### 5. 实现日程内容（核心组件）
-
-#### DayContent.vue开发流程
-
-主要负责右侧核心内容的展示，根据不同的 `currentDay` 渲染对应的教学内容。
-
-**5.1 基础结构与Props**
-接收主状态传递的数据，包括各种计数器、用户信息等。通过 `emit` 触发上层状态修改。
-
-**5.2 Day 1 实现（计数器）**
-实现一个简单的按钮点击计数功能，触发 `click-counter` 事件，父组件根据计数值解锁不同概念。
-
-**5.3 Day 2 实现（数据存储）**
-两块核心逻辑：
-1. **存储数据**：输入姓名和简介并触发存储事件。
-2. **检索数据**：显示已存信息。
-
-**5.4 Day 3 实现（投票系统）**
-- **候选人添加**：输入框添加候选人。
-- **投票界面**：遍历渲染候选人列表，并为每个候选人提供投票按钮及展示当前票数。
-
-**5.5 Day 4 实现（拍卖）**
-- **拍卖初始化**：设置拍卖物品及竞拍时长。
-- **出价界面**：输入出价金额及竞拍者地址进行模拟出价。
-
-**5.6 Day 5 实现（提款与权限管理）**
-为内容逻辑分组，包含5个核心功能块（左右分栏布局，无交互时居中）：
-1. **添加宝藏**：`addTreasure(uint256 amount)`
-2. **批准提款**：`approveWithdrawal(address recipient, uint256 amount)`，含随机地址生成。
-3. **提取宝藏**：`withdrawTreasure(uint256 amount)` 及状态重置。
-4. **转移所有权**：`transferOwnership(address newOwner)`
-5. **查询操作**：`getTreasureDetails()`
-合约函数验证均有对应UI交互。UI块标题下标注Solidity函数签名，以增强教学直观性。
-
-**5.7 Day 6 实现（高级概念）**
-- **存款**：存入ETH，包含金额验证（≥1 ETH解锁msg.value）。
-- **会员管理**：注册会员并查看会员总数。
-- **余额查询**：展示合约总余额。
-
-**5.8 Day 7 实现（债务关系与底层调用）**
-两大核心交互体系与底层指令演示：
-- **债务网 (嵌套映射)**：允许录入债务人、金额甚至附带字符串备注（展示 `string storage`），前端使用多维输入框展示 `mapping(address => mapping(address => Debt))` 的更新形态。
-- **钱包出账 (transfer vs call)**：提供了通过 `.transfer` (带 Gas 限制) 和 `.call{value}()` (无 Gas 限制低级调用) 进行 ETH 实际划转的对照演示，并对失败场景进行统一的不足余额（Insufficient Balance）错误拦截。
-
-**5.9 知识解锁区域（右栏跟随）**
-交互操作会触发提示气泡（💡）和知识解锁卡片（📚），随视线或滚动条悬停展示。
-
-### 6. 实现进度侧边栏
-
-#### Sidebar.vue开发
-展示各日程解锁的知识点数量和总体进度百分比。高亮显示当前进入的Day日程详情信息。
-
-### 7. 实现概念解锁逻辑
-
-统一在 `App.vue` 中管理，依据用户交互次数或输入数据条件触发 `unlockConcept(day, conceptId)`。
-
-例如Day 1解锁逻辑：
+**步骤 1**: 在 `src/data/days.js` 中添加配置
 ```javascript
-const clickCounter = () => {
-  contracts.value.day1.count++
-  if (contracts.value.day1.count === 1) unlockConcept(1, 'function')
-  // 后续依次解锁 increment, uint256, contract
+export const dayConfigs = {
+    // ... 现有配置
+    X: {
+        title: "Day X - 标题",
+        subtitle: "副标题",
+        concepts: ["concept1", "concept2", "concept3"]
+    }
 }
 ```
 
-### 8. 样式系统设计
+**步骤 2**: 创建组件文件 `src/components/days/DayX/YourComponent.vue`
 
-全局样式存放于 `main.css`。
+**步骤 3**: 创建 composable `src/composables/useDayX.js`（如需要状态管理）
 
-**全局变量与配色**:
-基于Solarized配色方案，定义如 `--primary-color: #b58900`, `--secondary-color: #2aa198` 等变量。
+**步骤 4**: 在 `src/components/DayContent.vue` 中注册动态导入
+```javascript
+const dayComponents = {
+  // ... 现有天数
+  X: defineAsyncComponent(() => import('./days/DayX/YourComponent.vue')),
+}
+```
 
-**响应式布局策略**:
-- PC端采用 `flex` 布局，左（250px）中（flex:1）右（300px）三栏结构。
-- 移动端将两侧边栏改为绝对定位的抽屉式布局 (`left: -100%`)，通过添加显隐类 (`.mobile-visible`) 实现平滑过渡滑出。
+**注意**: `progressStore.js` 会自动从 `dayConfigs` 计算 `totalConcepts`，**无需手动修改**。
 
-### 9. 关键问题解决记录
+---
 
-1. **侧边栏自动收起**：移除由 `.center-content` div 的错误点击事件引发的收缩。
-2. **标题居中问题**：删除 `main.css` 中覆盖的全局样式，使用专用的 `.header-center` 容器。
-3. **Day 5右栏空白/布局混乱**：清理DOM层级嵌套错误，梳理为 `.control-section` 规范化的分块。移除影响自适应宽度的 `max-width` 限制。
-4. **Vue模板编译错误**：修复被打断的 `v-if/v-else-if` 链，补齐缺失的 `</div>` 结束标签。
-5. **解锁阈值调整**：根据反馈将 `msg.value` 的解锁条件从 2 ETH 降为 1 ETH。
+## 核心组件说明
 
-### 10. 开发最佳实践
+### AppHeader.vue
+- 标题居中显示，包含免责声明和作者署名
+- 左右切换按钮控制侧边栏显示
+- 接收 `showLeftSidebar` 和 `showRightSidebar` 属性
 
-- **组件通信**: Props向下传递数据，Emit向上触发事件，Reactive refs管理响应状态。
-- **样式组织**: 组件内部优先使用 `<style scoped>`，全局共用样式沉淀至 `main.css`。
-- **性能及错误防范**: 保证模板闭合，合理利用解构和计算属性避免重新渲染。
+### DayContent.vue
+- 使用动态导入加载各 Day 组件
+- 未实现的天数显示 `ComingSoon` 组件
+- 支持 `switch-day` 事件跳转
 
-### 11. 调试技巧
+### DayNavigation.vue
+- 显示所有可用天数列表
+- 支持正序/倒序切换
+- 高亮当前选中天数
 
-- **Vite热更新**: 依赖Vite的HMR修改代码后快速预览。
-- **Vue DevTools**: 浏览器插件透视组件状态与数据流动。
-- **控制台审查**: 跟踪常规JS错误与浏览器网络请求。
+### Sidebar.vue
+- 显示当前天数进度
+- 展示解锁的知识点
+- 显示交互日志
 
-### 12. 部署检查清单
+### KnowledgePanel.vue（共享组件）
+- 显示已解锁概念
+- 概念切换和代码展示
+- 进度百分比显示
 
-- [ ] 所有日程功能正常工作
+---
+
+## 样式系统
+
+### 全局CSS变量（Solarized配色）
+```css
+--primary-color: #b58900;
+--accent-cyan: #2aa198;
+--accent-green: #859900;
+--accent-red: #dc322f;
+--bg-base: #fdf6e3;
+--bg-surface-1: #eee8d5;
+```
+
+### 按钮样式（全局定义）
+```html
+<button class="day-action-btn cyan">按钮</button>
+<button class="day-action-btn green">按钮</button>
+<button class="day-action-btn red small">小按钮</button>
+```
+可用颜色：blue, yellow, orange, green, magenta, cyan, red
+
+### 响应式布局
+- PC端：左(250px) 中(flex:1) 右(300px) 三栏
+- 移动端：抽屉式侧边栏，点击按钮滑出
+
+---
+
+## 重构改进记录
+
+### 已完成重构
+
+1. **状态管理重构**
+   - 从 App.vue 集中式状态迁移到 Pinia
+   - 创建 `contractStore.js` 和 `progressStore.js`
+   - `totalConcepts` 自动从 `dayConfigs` 计算
+
+2. **组件架构重构**
+   - 提取共享组件（KnowledgePanel, FullCodeModal, ComingSoon）
+   - 使用 `defineAsyncComponent` 实现动态导入
+   - 统一概念解锁逻辑到 `progressStore.unlockConcept()`
+
+3. **样式重构**
+   - 提取全局按钮样式到 `main.css`
+   - 各 Day 组件使用 `.day-action-btn` 类
+   - 保留各 Day 独特配色方案
+
+4. **错误处理**
+   - 添加 `ComingSoon` 组件处理未实现天数
+   - 统一输入验证
+
+### 实验性功能（未完成）
+
+**列宽调节器**:
+- `useColumnResizer.js` - 列宽调节 composable
+- `ResizerHandle.vue` - 分隔条组件
+- `ResizableLayout.vue` - 可调整布局组件
+- 状态：实验性，存在渲染问题待解决
+
+### 开发最佳实践
+
+- **状态管理**: 使用 Pinia stores，避免组件深层传递
+- **组件通信**: Props 向下，Emit 向上，跨组件用 Store
+- **样式组织**: 基础样式在 `main.css`，组件特定样式用 scoped
+- **代码分割**: 使用动态导入减少首屏加载
+
+---
+
+## 调试技巧
+
+- **Vite热更新**: 修改代码后快速预览
+- **Vue DevTools**: 透视组件状态与数据流动
+- **Pinia DevTools**: 追踪状态变化
+- **控制台审查**: 跟踪常规JS错误
+
+---
+
+## 部署检查清单
+
+- [ ] 所有日程功能正常工作（Day 1-16）
 - [ ] 概念解锁逻辑正确
-- [ ] PC端及移动端布局正常且侧边栏切换可用
-- [ ] 无控制台及模板编译错误
-- [ ] 界面交互响应流畅
+- [ ] PC端及移动端布局正常
+- [ ] 侧边栏切换可用
+- [ ] 无控制台错误
+- [ ] 构建成功 (`npm run build`)
 
-### 13. UI/UX与交互体验优化记录
+---
 
-- **全局交互提升**：增加右侧悬浮粘性侧边栏 (`position: sticky`)；高频输入的以太坊地址增加🎲“随机生成”快捷键。底部的“完整代码”查看按钮规格全局统一。
-- **视觉排版**：颜色主题收敛对齐至 **Solarized Cyan (`#2aa198`)** 和柔和暖色 (`#b58900`)；功能容器 (Function Block) 四周留出均匀内边距并搭配细边框。
-- **合规与引导**：为所有核心执行块添加 `.function-signature` (合约函数等宽签名)。并在 Day 4 修复渐进式解锁阻断Bug，清理多次弹出的冗余气泡。
+## 参考文档
 
-## 扩展开发指南
-
-### 添加新日程
-1. 补充 `data/days.js` (日程配置) 及 `data/concepts.js` (概念定义)。
-2. 在 `DayContent.vue` 的 `v-else-if` 中增加分支，渲染新UI。
-3. `App.vue` 注入相应状态并在 `main.css` 增加针对性样式。
-
-### 添加新交互
-1. 在 `DayContent.vue` 补充按钮与输入框并绑定 `emit`。
-2. 在主入口捕获事件，处理状态并调用 `unlockConcept` 判断触发逻辑。
-
-## 常见问题FAQ
-
-**Q: 如何调整全局字体/侧边栏/配色？**
-A: 修改 `main.css` 的 `:root` 样式变量及对应容器的 `width` 值。
-
-**Q: 如何修复v-else-if错误？**
-A: 确保在Vue组件下的 `v-if/v-else-if` 平级DOM链连续，中间不能被其他HTML元素打断。
-
-## 总结
-
-这个GUI项目展示了Vue 3 Composition API的完整应用，包括：
-- 组件化开发
-- 响应式状态管理
-- 父子组件通信
-- 条件渲染和列表渲染
-- 事件处理
-- 样式封装
-- 响应式设计
-
-通过这个项目，可以学习到如何从零开始构建一个功能完整的交互式教学界面。
+- [AI_PROMPT_GUIDE.md](./AI_PROMPT_GUIDE.md) - 详细的AI开发指南
+- [Vue 3 文档](https://vuejs.org/)
+- [Pinia 文档](https://pinia.vuejs.org/)

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day11 VaultMaster 教学面板</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      background: #f6f8fa;
+      color: #1f2937;
+      line-height: 1.45;
+    }
+    h2, h3 {
+      margin-top: 0;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 14px;
+      max-width: 1080px;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .hint {
+      margin: 0 0 10px;
+      color: #4b5563;
+      font-size: 13px;
+    }
+    input {
+      min-width: 260px;
+      padding: 8px 10px;
+      border: 1px solid #cfd4dc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 8px 12px;
+      border: 1px solid #cfd4dc;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #f3f4f6;
+    }
+    .pill {
+      display: inline-block;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #374151;
+    }
+    #status {
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    #status.error {
+      background: #fef2f2;
+      border-color: #fecaca;
+      color: #b91c1c;
+    }
+    #status.success {
+      background: #ecfdf5;
+      border-color: #a7f3d0;
+      color: #047857;
+    }
+    ul {
+      padding-left: 20px;
+      margin: 8px 0 0;
+    }
+    li {
+      margin-bottom: 10px;
+      border-bottom: 1px dashed #e5e7eb;
+      padding-bottom: 8px;
+    }
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+      word-break: break-all;
+    }
+    .mono {
+      font-family: Consolas, "Courier New", monospace;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h2>Day11 - VaultMaster 教学面板</h2>
+  <p class="hint">读取操作免费；写入操作需要 gas。`withdraw` 与 `transferOwnership` 仅 owner 可执行。</p>
+
+  <div class="card">
+    <h3>1) 钱包与合约</h3>
+    <div class="row">
+      <button id="connectBtn">连接 MetaMask</button>
+      <button id="refreshWalletBtn">刷新钱包信息</button>
+      <span id="walletInfo" class="pill">未连接</span>
+    </div>
+    <div class="row">
+      <input id="contractAddress" placeholder="输入 VaultMaster 合约地址 (0x...)" />
+      <button id="initContractBtn">初始化合约</button>
+      <span id="contractInfo" class="pill">未初始化</span>
+    </div>
+    <div id="status">状态：等待连接钱包</div>
+  </div>
+
+  <div class="card">
+    <h3>2) 读取状态（免费）</h3>
+    <div class="row">
+      <button id="readOwnerBtn">读取 ownerAddress()</button>
+      <span id="ownerText" class="mono muted">owner: -</span>
+    </div>
+    <div class="row">
+      <button id="readBalanceBtn">读取 getBalance()</button>
+      <span id="balanceText" class="mono muted">balance: -</span>
+    </div>
+    <div class="row">
+      <button id="refreshStateBtn">刷新 owner + balance</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>3) 写入操作（需要 gas）</h3>
+    <p class="hint">执行交易后会等待区块确认，并自动刷新 owner 与余额。</p>
+
+    <div class="row">
+      <input id="depositEth" placeholder="存款金额（ETH，例如 0.01）" />
+      <button id="depositBtn">deposit()</button>
+    </div>
+
+    <div class="row">
+      <input id="withdrawTo" placeholder="withdraw 收款地址 (0x...)" />
+      <input id="withdrawEth" placeholder="withdraw 金额（ETH）" />
+      <button id="withdrawBtn">withdraw(address,uint256) [onlyOwner]</button>
+    </div>
+
+    <div class="row">
+      <input id="newOwner" placeholder="新 owner 地址 (0x...)" />
+      <button id="transferOwnerBtn">transferOwnership(address) [onlyOwner]</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>4) 事件日志</h3>
+    <div class="row">
+      <button id="loadHistoryBtn">读取历史事件</button>
+      <button id="listenBtn">开始实时监听</button>
+      <button id="stopBtn">停止监听</button>
+      <button id="clearLogsBtn">清空日志</button>
+    </div>
+    <ul id="eventList"></ul>
+  </div>
+
+  <script>
+    const ABI = [
+      "function ownerAddress() view returns (address)",
+      "function getBalance() view returns (uint256)",
+      "function deposit() payable",
+      "function withdraw(address _to, uint256 _amount)",
+      "function transferOwnership(address _newOwner)",
+      "event DepositSuccessful(address indexed account, uint256 value)",
+      "event WithdrawSuccessful(address indexed reciepient, uint256 value)"
+    ];
+
+    const METAMASK_DOWNLOAD_URL = "https://metamask.io/download/";
+    let provider;
+    let signer;
+    let injectedProvider;
+    let readContract;
+    let writeContract;
+    let isListening = false;
+
+    const connectBtn = document.getElementById("connectBtn");
+    const refreshWalletBtn = document.getElementById("refreshWalletBtn");
+    const walletInfo = document.getElementById("walletInfo");
+    const contractAddressInput = document.getElementById("contractAddress");
+    const initContractBtn = document.getElementById("initContractBtn");
+    const contractInfo = document.getElementById("contractInfo");
+    const statusEl = document.getElementById("status");
+
+    const readOwnerBtn = document.getElementById("readOwnerBtn");
+    const readBalanceBtn = document.getElementById("readBalanceBtn");
+    const refreshStateBtn = document.getElementById("refreshStateBtn");
+    const ownerText = document.getElementById("ownerText");
+    const balanceText = document.getElementById("balanceText");
+
+    const depositEthInput = document.getElementById("depositEth");
+    const depositBtn = document.getElementById("depositBtn");
+    const withdrawToInput = document.getElementById("withdrawTo");
+    const withdrawEthInput = document.getElementById("withdrawEth");
+    const withdrawBtn = document.getElementById("withdrawBtn");
+    const newOwnerInput = document.getElementById("newOwner");
+    const transferOwnerBtn = document.getElementById("transferOwnerBtn");
+
+    const loadHistoryBtn = document.getElementById("loadHistoryBtn");
+    const listenBtn = document.getElementById("listenBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const clearLogsBtn = document.getElementById("clearLogsBtn");
+    const eventListEl = document.getElementById("eventList");
+
+    function setStatus(message, type) {
+      statusEl.textContent = `状态：${message}`;
+      statusEl.classList.remove("error", "success");
+      if (type === "error") statusEl.classList.add("error");
+      if (type === "success") statusEl.classList.add("success");
+    }
+
+    function getReadableError(err) {
+      if (!err) return "未知错误";
+      if (typeof err === "string") return err;
+      return err.shortMessage || err.reason || err.message || "未知错误";
+    }
+
+    function appendLog(line) {
+      const li = document.createElement("li");
+      li.innerHTML = line;
+      eventListEl.prepend(li);
+    }
+
+    function formatDate(unixSec) {
+      if (!unixSec) return "-";
+      return new Date(Number(unixSec) * 1000).toLocaleString();
+    }
+
+    function getContractAddress() {
+      return contractAddressInput.value.trim();
+    }
+
+    function isFileProtocol() {
+      return window.location.protocol === "file:";
+    }
+
+    function getInjectedProvider() {
+      if (window.ethereum?.isMetaMask) return window.ethereum;
+      const providers = window.ethereum?.providers;
+      if (Array.isArray(providers)) {
+        const mm = providers.find((p) => p?.isMetaMask);
+        if (mm) return mm;
+      }
+      return window.ethereum;
+    }
+
+    async function waitForProvider(timeoutMs = 1800) {
+      const readyNow = getInjectedProvider();
+      if (readyNow) return readyNow;
+      return new Promise((resolve) => {
+        let done = false;
+        const tryResolve = () => {
+          if (done) return;
+          const p = getInjectedProvider();
+          if (p) {
+            done = true;
+            window.removeEventListener("ethereum#initialized", tryResolve);
+            resolve(p);
+          }
+        };
+        window.addEventListener("ethereum#initialized", tryResolve, { once: true });
+        const timer = setInterval(tryResolve, 100);
+        setTimeout(() => {
+          clearInterval(timer);
+          if (done) return;
+          done = true;
+          window.removeEventListener("ethereum#initialized", tryResolve);
+          resolve(undefined);
+        }, timeoutMs);
+      });
+    }
+
+    function ensureAddress(text, fieldName) {
+      if (!ethers.isAddress(text)) {
+        throw new Error(`${fieldName} 地址格式不正确`);
+      }
+    }
+
+    function ensureContractsReady() {
+      if (!provider || !signer) {
+        throw new Error("请先连接钱包");
+      }
+      if (!readContract || !writeContract) {
+        throw new Error("请先初始化合约");
+      }
+    }
+
+    async function refreshWalletInfo() {
+      if (!provider || !signer) {
+        walletInfo.textContent = "未连接";
+        return;
+      }
+      const addr = await signer.getAddress();
+      const network = await provider.getNetwork();
+      walletInfo.textContent = `地址: ${addr} | chainId: ${network.chainId.toString()}`;
+    }
+
+    async function connectWallet() {
+      injectedProvider = await waitForProvider();
+      if (!injectedProvider) {
+        const fileHint = isFileProtocol()
+          ? "（你当前是 file:// 打开页面，建议改用 http://localhost 访问）"
+          : "";
+        throw new Error(`未检测到 MetaMask 注入对象${fileHint}。请确认扩展已启用后重启浏览器，或前往 ${METAMASK_DOWNLOAD_URL}`);
+      }
+      provider = new ethers.BrowserProvider(injectedProvider);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      await refreshWalletInfo();
+    }
+
+    function initContracts() {
+      const address = getContractAddress();
+      ensureAddress(address, "合约");
+      if (!provider || !signer) {
+        throw new Error("请先连接钱包");
+      }
+      readContract = new ethers.Contract(address, ABI, provider);
+      writeContract = new ethers.Contract(address, ABI, signer);
+      contractInfo.textContent = `合约已初始化: ${address}`;
+    }
+
+    async function readOwner() {
+      ensureContractsReady();
+      const owner = await readContract.ownerAddress();
+      ownerText.textContent = `owner: ${owner}`;
+      return owner;
+    }
+
+    async function readBalance() {
+      ensureContractsReady();
+      const balanceWei = await readContract.getBalance();
+      const balanceEth = ethers.formatEther(balanceWei);
+      balanceText.textContent = `balance: ${balanceEth} ETH`;
+      return balanceWei;
+    }
+
+    async function refreshState() {
+      await readOwner();
+      await readBalance();
+    }
+
+    async function sendTx(actionName, sendFn) {
+      ensureContractsReady();
+      setStatus(`${actionName} 交易发送中...`);
+      const tx = await sendFn();
+      setStatus(`${actionName} 已发送，tx: ${tx.hash}`);
+      await tx.wait();
+      setStatus(`${actionName} 已确认`, "success");
+      await refreshState();
+      await loadHistory();
+    }
+
+    async function deposit() {
+      const amountText = depositEthInput.value.trim();
+      if (!amountText) throw new Error("请输入存款金额");
+      const amountWei = ethers.parseEther(amountText);
+      if (amountWei <= 0n) throw new Error("存款金额必须大于 0");
+      await sendTx("deposit", () => writeContract.deposit({ value: amountWei }));
+    }
+
+    async function withdraw() {
+      const to = withdrawToInput.value.trim();
+      const amountText = withdrawEthInput.value.trim();
+      if (!to || !amountText) throw new Error("请填写 withdraw 地址和金额");
+      ensureAddress(to, "withdraw");
+      const amountWei = ethers.parseEther(amountText);
+      if (amountWei <= 0n) throw new Error("withdraw 金额必须大于 0");
+      await sendTx("withdraw", () => writeContract.withdraw(to, amountWei));
+    }
+
+    async function transferOwnership() {
+      const newOwner = newOwnerInput.value.trim();
+      if (!newOwner) throw new Error("请输入新 owner 地址");
+      ensureAddress(newOwner, "新 owner");
+      await sendTx("transferOwnership", () => writeContract.transferOwnership(newOwner));
+    }
+
+    async function buildEventLine(name, payload) {
+      const block = payload.blockNumber ? await provider.getBlock(payload.blockNumber) : null;
+      const timestamp = block ? formatDate(block.timestamp) : "-";
+      const txHash = payload.transactionHash || "-";
+      if (name === "DepositSuccessful") {
+        return `
+          <div><strong>事件:</strong> DepositSuccessful</div>
+          <div><strong>账户:</strong> ${payload.account}</div>
+          <div><strong>金额:</strong> ${ethers.formatEther(payload.value)} ETH</div>
+          <div><strong>时间:</strong> ${timestamp}</div>
+          <div class="muted mono">tx: ${txHash}</div>
+        `;
+      }
+      return `
+        <div><strong>事件:</strong> WithdrawSuccessful</div>
+        <div><strong>收款:</strong> ${payload.reciepient}</div>
+        <div><strong>金额:</strong> ${ethers.formatEther(payload.value)} ETH</div>
+        <div><strong>时间:</strong> ${timestamp}</div>
+        <div class="muted mono">tx: ${txHash}</div>
+      `;
+    }
+
+    async function loadHistory() {
+      ensureContractsReady();
+      setStatus("读取历史事件中...");
+      eventListEl.innerHTML = "";
+
+      const depositFilter = readContract.filters.DepositSuccessful();
+      const withdrawFilter = readContract.filters.WithdrawSuccessful();
+      const depositLogs = await readContract.queryFilter(depositFilter, 0, "latest");
+      const withdrawLogs = await readContract.queryFilter(withdrawFilter, 0, "latest");
+
+      const merged = [];
+      for (const log of depositLogs) {
+        merged.push({
+          name: "DepositSuccessful",
+          blockNumber: log.blockNumber,
+          txIndex: log.index,
+          payload: {
+            account: log.args.account,
+            value: log.args.value,
+            blockNumber: log.blockNumber,
+            transactionHash: log.transactionHash
+          }
+        });
+      }
+      for (const log of withdrawLogs) {
+        merged.push({
+          name: "WithdrawSuccessful",
+          blockNumber: log.blockNumber,
+          txIndex: log.index,
+          payload: {
+            reciepient: log.args.reciepient,
+            value: log.args.value,
+            blockNumber: log.blockNumber,
+            transactionHash: log.transactionHash
+          }
+        });
+      }
+
+      merged.sort((a, b) => (a.blockNumber - b.blockNumber) || (a.txIndex - b.txIndex));
+      for (const item of merged) {
+        const html = await buildEventLine(item.name, item.payload);
+        appendLog(html);
+      }
+      setStatus(`历史事件读取完成，共 ${merged.length} 条`, "success");
+    }
+
+    function startListening() {
+      ensureContractsReady();
+      if (isListening) {
+        setStatus("监听已开启，无需重复开启");
+        return;
+      }
+
+      readContract.on("DepositSuccessful", async (account, value, eventLog) => {
+        const html = await buildEventLine("DepositSuccessful", {
+          account,
+          value,
+          blockNumber: eventLog.log.blockNumber,
+          transactionHash: eventLog.log.transactionHash
+        });
+        appendLog(html);
+      });
+
+      readContract.on("WithdrawSuccessful", async (reciepient, value, eventLog) => {
+        const html = await buildEventLine("WithdrawSuccessful", {
+          reciepient,
+          value,
+          blockNumber: eventLog.log.blockNumber,
+          transactionHash: eventLog.log.transactionHash
+        });
+        appendLog(html);
+      });
+
+      isListening = true;
+      setStatus("已开启实时监听", "success");
+    }
+
+    function stopListening() {
+      if (!readContract || !isListening) {
+        setStatus("当前没有激活的监听器");
+        return;
+      }
+      readContract.removeAllListeners("DepositSuccessful");
+      readContract.removeAllListeners("WithdrawSuccessful");
+      isListening = false;
+      setStatus("已停止监听");
+    }
+
+    connectBtn.addEventListener("click", async () => {
+      try {
+        setStatus("连接钱包中...");
+        await connectWallet();
+        setStatus("钱包连接成功", "success");
+      } catch (err) {
+        setStatus(`连接失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    refreshWalletBtn.addEventListener("click", async () => {
+      try {
+        await refreshWalletInfo();
+        setStatus("钱包信息已刷新");
+      } catch (err) {
+        setStatus(`刷新失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    initContractBtn.addEventListener("click", async () => {
+      try {
+        initContracts();
+        await refreshState();
+        setStatus("合约初始化成功", "success");
+      } catch (err) {
+        setStatus(`初始化失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    readOwnerBtn.addEventListener("click", async () => {
+      try {
+        await readOwner();
+        setStatus("owner 读取成功", "success");
+      } catch (err) {
+        setStatus(`读取失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    readBalanceBtn.addEventListener("click", async () => {
+      try {
+        await readBalance();
+        setStatus("余额读取成功", "success");
+      } catch (err) {
+        setStatus(`读取失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    refreshStateBtn.addEventListener("click", async () => {
+      try {
+        await refreshState();
+        setStatus("状态已刷新", "success");
+      } catch (err) {
+        setStatus(`刷新失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    depositBtn.addEventListener("click", async () => {
+      try {
+        await deposit();
+      } catch (err) {
+        setStatus(`deposit 失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    withdrawBtn.addEventListener("click", async () => {
+      try {
+        await withdraw();
+      } catch (err) {
+        setStatus(`withdraw 失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    transferOwnerBtn.addEventListener("click", async () => {
+      try {
+        await transferOwnership();
+      } catch (err) {
+        setStatus(`transferOwnership 失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    loadHistoryBtn.addEventListener("click", async () => {
+      try {
+        await loadHistory();
+      } catch (err) {
+        setStatus(`读取历史失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    listenBtn.addEventListener("click", async () => {
+      try {
+        startListening();
+      } catch (err) {
+        setStatus(`监听失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      try {
+        stopListening();
+      } catch (err) {
+        setStatus(`停止监听失败 - ${getReadableError(err)}`, "error");
+      }
+    });
+
+    clearLogsBtn.addEventListener("click", () => {
+      eventListEl.innerHTML = "";
+      setStatus("日志已清空");
+    });
+
+    const providerForEvents = getInjectedProvider();
+    if (providerForEvents?.on) {
+      providerForEvents.on("accountsChanged", async () => {
+        if (!provider) return;
+        signer = await provider.getSigner();
+        await refreshWalletInfo();
+        setStatus("检测到账户切换，请确认是否仍为 owner");
+      });
+      providerForEvents.on("chainChanged", () => {
+        setStatus("检测到网络切换，请重新初始化合约");
+        readContract = undefined;
+        writeContract = undefined;
+        contractInfo.textContent = "未初始化";
+      });
+    }
+
+    if (isFileProtocol()) {
+      setStatus("当前是 file:// 访问，建议改为 http://localhost 以确保钱包注入稳定");
+    }
+  </script>
+</body>
+</html>

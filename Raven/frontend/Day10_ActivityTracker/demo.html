@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker - UI Demo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🏃 Simple Fitness Tracker</h1>
+        <div style="text-align: center; padding: 15px; background: #fff3cd; border-radius: 10px; margin-bottom: 20px; border: 2px solid #ffc107;">
+            <strong>⚠️ UI DEMO VERSION</strong><br>
+            All features are simulated. No blockchain connection required.
+        </div>
+
+        <!-- Connection Status -->
+        <div class="status-bar">
+            <span id="connectionStatus" class="connected">Connected: 0xAbCd...1234 | 0.7480 ETH</span>
+            <button class="btn" disabled>Connected</button>
+        </div>
+
+        <!-- User Profile -->
+        <div class="section">
+            <h2>Your Profile</h2>
+            <p><strong>Name:</strong> <span id="profileName">Demo User</span></p>
+            <p><strong>Weight:</strong> <span id="profileWeight">70</span> kg</p>
+            <p><strong>Total Workouts:</strong> <span id="totalWorkouts">15</span></p>
+            <p><strong>Total Distance:</strong> <span id="totalDistance">25000</span> m</p>
+
+            <div class="update-weight">
+                <h3>Update Weight</h3>
+                <input type="number" id="newWeight" placeholder="New weight (kg)" value="68">
+                <button class="btn" onclick="demoUpdateWeight()">Update</button>
+            </div>
+        </div>
+
+        <!-- Log Activity Section -->
+        <div class="section">
+            <h2>Log Activity</h2>
+            <input type="text" id="activityType" placeholder="Activity type (e.g., Running)" value="Running">
+            <input type="number" id="duration" placeholder="Duration (minutes)" value="30">
+            <input type="number" id="distance" placeholder="Distance (meters)" value="5000">
+            <button class="btn" onclick="demoLogActivity()">Log Activity</button>
+        </div>
+
+        <!-- Events Log -->
+        <div class="section">
+            <h2>Events Log</h2>
+            <div id="eventsLog" class="events-container">
+                <!-- Pre-populated sample events -->
+                <div class="event-item milestone">
+                    <div class="event-title">🏆 Milestone Achieved!</div>
+                    <div class="event-details">10 workouts completed</div>
+                    <div class="event-timestamp">2026-03-12 10:30:45</div>
+                </div>
+
+                <div class="event-item activity">
+                    <div class="event-title">🏃 Activity Logged</div>
+                    <div class="event-details">Running - Duration: 30min, Distance: 5000m</div>
+                    <div class="event-timestamp">2026-03-12 10:15:22</div>
+                </div>
+
+                <div class="event-item update">
+                    <div class="event-title">📊 Profile Updated</div>
+                    <div class="event-details">New weight: 70 kg</div>
+                    <div class="event-timestamp">2026-03-12 09:45:10</div>
+                </div>
+
+                <div class="event-item activity">
+                    <div class="event-title">🏃 Activity Logged</div>
+                    <div class="event-details">Swimming - Duration: 45min, Distance: 2000m</div>
+                    <div class="event-timestamp">2026-03-11 18:20:33</div>
+                </div>
+
+                <div class="event-item register">
+                    <div class="event-title">🎉 User Registered</div>
+                    <div class="event-details">Welcome Demo User!</div>
+                    <div class="event-timestamp">2026-03-10 14:30:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo version JavaScript
+        let eventCounter = 0;
+
+        function demoUpdateWeight() {
+            const newWeight = document.getElementById('newWeight').value;
+            if (!newWeight) {
+                alert('Please enter new weight!');
+                return;
+            }
+
+            // Update displayed weight
+            document.getElementById('profileWeight').textContent = newWeight;
+
+            // Add event
+            addDemoEvent(
+                '📊 Profile Updated',
+                `New weight: ${newWeight} kg`,
+                'update'
+            );
+
+            // Clear input
+            document.getElementById('newWeight').value = '';
+
+            // Simulated success message
+            setTimeout(() => {
+                alert('✅ Weight updated successfully!\n\nThis is a demo version - no blockchain connection.');
+            }, 300);
+        }
+
+        function demoLogActivity() {
+            const type = document.getElementById('activityType').value;
+            const duration = document.getElementById('duration').value;
+            const distance = document.getElementById('distance').value;
+
+            if (!type || !duration || !distance) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            // Update totals
+            const currentWorkouts = parseInt(document.getElementById('totalWorkouts').textContent);
+            const currentDistance = parseInt(document.getElementById('totalDistance').textContent);
+
+            document.getElementById('totalWorkouts').textContent = currentWorkouts + 1;
+            document.getElementById('totalDistance').textContent = currentDistance + parseInt(distance);
+
+            // Add event
+            addDemoEvent(
+                '🏃 Activity Logged',
+                `${type} - Duration: ${duration}min, Distance: ${distance}m`,
+                'activity'
+            );
+
+            // Check milestones
+            if ((currentWorkouts + 1) % 10 === 0) {
+                setTimeout(() => {
+                    addDemoEvent(
+                        '🏆 Milestone Achieved!',
+                        `${currentWorkouts + 1} workouts completed`,
+                        'milestone'
+                    );
+                }, 500);
+            }
+
+            // Clear form
+            document.getElementById('activityType').value = '';
+            document.getElementById('duration').value = '';
+            document.getElementById('distance').value = '';
+
+            // Simulated success message
+            setTimeout(() => {
+                alert('✅ Activity logged successfully!\n\nThis is a demo version - no blockchain connection.');
+            }, 300);
+        }
+
+        function addDemoEvent(title, details, type) {
+            const eventsLog = document.getElementById('eventsLog');
+            const eventItem = document.createElement('div');
+            eventItem.className = `event-item ${type}`;
+
+            const now = new Date().toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            eventItem.innerHTML = `
+                <div class="event-title">${title}</div>
+                <div class="event-details">${details}</div>
+                <div class="event-timestamp">${now}</div>
+            `;
+
+            // Add to top
+            eventsLog.insertBefore(eventItem, eventsLog.firstChild);
+        }
+
+        // Page load message
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('🎨 This is a UI demo version');
+                console.log('📱 All functions are simulated');
+                console.log('🔗 No wallet connection needed');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
